@@ -1,0 +1,4 @@
+venv/ 
+_pycache_/ 
+*.json 
+.node_repl_history 
