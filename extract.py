@@ -2,6 +2,7 @@ import requests
 import pandas as pd
 import json
 import boto3
+import time
 from datetime import datetime
 
 def fetch_crypto_data(coin_id='bitcoin'):
@@ -12,7 +13,7 @@ def fetch_crypto_data(coin_id='bitcoin'):
     if response.status_code == 200:
         return response.json()
     else:
-        print(f"Erro na API:{response.status_code}")
+        print(f"Erro na API: {response.status_code}")
         return None
     
 def simplify_data(raw_data):
@@ -26,37 +27,52 @@ def simplify_data(raw_data):
         }
     return processed_data
 
-def upload_to_s3(file_name, bucket):
-    """Envia o arquivo para o LocalStack (simulando AWS S3)."""
-    #Usamos 'test' como credencial para o LocalStack nao travar.
-    s3 = boto3.client('s3',
-                         endpoint_url="http://localhost:4566",
-                         aws_access_key_id="test",
-                         aws_secret_access_key="test",
-                         region_name="us-east-1"
-                         )
+def fetch_multiple_cryptos(coin_list=['bitcoin', 'ethereum', 'ripple', 'cardano']):
+    """Busca dados de múltiplas criptomoedas."""
+    all_data = []
     
-    try:
+    for coin in coin_list:
+        print(f"  Buscando dados de {coin}...")
+        raw = fetch_crypto_data(coin)
+        if raw:
+            data = simplify_data(raw)
+            all_data.append(data)
+        else:
+            print(f"  ! Falha ao buscar {coin}")
+        time.sleep(1.5)  # Delay de 1.5 segundos entre requisições
+    
+    return all_data
+
+def upload_to_s3(file_name, bucket):
+    try: 
+        s3 = boto3.client('s3',
+                             endpoint_url="http://localhost:4566",
+                             aws_access_key_id="test",
+                             aws_secret_access_key="test",
+                             region_name="us-east-1"
+                             )
+        
         s3.upload_file(file_name, bucket, file_name)
-        print(f"---Sucesso! {file_name} enviado para o bucket {bucket}---")
+        print(f"---Sucesso no S3!")
         
     except Exception as e:
-        print(f"Erro ao enviar para S3: {e}")
+        print(f"Aviso: S3 Offline, mas os dados locais estão salvos.")
         
 if __name__ == "__main__":
-    print("Iniciando extração...")
-    raw = fetch_crypto_data()
+    print("Iniciando extração de múltiplas criptomoedas...")
     
-    if raw:
-       data = simplify_data(raw)
-       
-       #Salvando localmente 'landing zone' (Data Lake)
+    # Lista de criptomoedas para análise
+    cryptos = ['bitcoin', 'ethereum', 'ripple', 'cardano', 'uniswap', 'chainlink', 'litecoin']
+    data_list = fetch_multiple_cryptos(cryptos)
+    
+    if data_list:
+       # Salvando localmente (landing zone - Data Lake)
        file_path = 'raw_data.json'
        with open(file_path, 'w') as f:
-              json.dump(data, f, indent=4)
+              json.dump(data_list, f, indent=4)
 
-print(F"2. Dados salvos localmente em {file_path}")
+       print(f"2. Dados salvos localmente em {file_path}")
 
-# Enviando para o LocalStack S3
-print("3. Iniciando upload para o LocalStack S3...")
-upload_to_s3(file_path, 'data-lake-raw')
+       # Enviando para o LocalStack S3
+       print("3. Iniciando upload para o LocalStack S3...")
+       upload_to_s3(file_path, 'data-lake-raw')

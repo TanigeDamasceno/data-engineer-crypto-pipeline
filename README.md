@@ -38,6 +38,14 @@ simplified to keep only essential fields
 **Boto3** to upload the processed file
 to a simulated AWS S3 bucket ('data-lake-raw').
 
+# Medallion Architecture Implemented
+
+**Bronze:** Raw JSON storage.
+
+**Silver** Optimized Parquet files for big data.
+
+**Gold** Business-level aggregations and market satus indicators. 
+
 ## How to Run
 
 1. Clone this repository.
@@ -48,9 +56,3 @@ environment:
 ```bash
 python -m venv venv 
 source venv /Scripts/activate
-
-#install dependencies: 
-pip install -r requirements.txt 
-
-#Run the pipeline:
-python extatc.py
