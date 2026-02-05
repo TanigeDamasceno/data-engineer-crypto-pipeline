@@ -9,9 +9,9 @@ storage process using **LocalStack**
 
 ## Tech Stack
 
-* **Language** Python 3.x
+* **Language:** Python 3.x
 
-* **Data Source** CoinGecko API
+* **Data Source:** CoinGecko API
 
 * **Cloud Simulation:** LocalStack
 (AWS S3)
