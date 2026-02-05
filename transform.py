@@ -26,4 +26,4 @@ def transform_json_to_parquet(input_file, output_file):
         print(f"Erro na transformação: {e}")
         
 if __name__ == "__main__":
-        transform_json_to_parquet('raw_data.json', 'refined_data.parquet')
+    transform_json_to_parquet('raw_data.json', 'refined_data.parquet')

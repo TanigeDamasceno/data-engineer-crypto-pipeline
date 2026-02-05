@@ -8,13 +8,26 @@ from datetime import datetime
 def fetch_crypto_data(coin_id='bitcoin'):
     """Busca dados de mercado de uma criptomoeda específica."""
     url = f"https://api.coingecko.com/api/v3/coins/{coin_id}"
-    response = requests.get(url)
+    max_retries = 3
     
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print(f"Erro na API: {response.status_code}")
-        return None
+    for attempt in range(max_retries):
+        response = requests.get(url)
+        
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 429:
+            if attempt < max_retries - 1:
+                wait_time = 2 ** (attempt + 1)  # Exponential backoff: 2, 4, 8 segundos
+                print(f"    Rate limited. Aguardando {wait_time}s antes de retry...")
+                time.sleep(wait_time)
+            else:
+                print(f"Erro na API: {response.status_code} (máximo de tentativas excedido)")
+                return None
+        else:
+            print(f"Erro na API: {response.status_code}")
+            return None
+    
+    return None
     
 def simplify_data(raw_data):
     """Transforma o JSON bruto em um formato estruturado (Dicionario)."""
@@ -39,7 +52,7 @@ def fetch_multiple_cryptos(coin_list=['bitcoin', 'ethereum', 'ripple', 'cardano'
             all_data.append(data)
         else:
             print(f"  ! Falha ao buscar {coin}")
-        time.sleep(1.5)  # Delay de 1.5 segundos entre requisições
+        time.sleep(2)  # Delay de 2 segundos entre requisições
     
     return all_data
 
@@ -61,8 +74,8 @@ def upload_to_s3(file_name, bucket):
 if __name__ == "__main__":
     print("Iniciando extração de múltiplas criptomoedas...")
     
-    # Lista de criptomoedas para análise
-    cryptos = ['bitcoin', 'ethereum', 'ripple', 'cardano', 'uniswap', 'chainlink', 'litecoin']
+    # Lista de criptomoedas para análise (apenas as com sucesso consistente)
+    cryptos = ['bitcoin', 'ethereum', 'ripple', 'cardano', 'uniswap']
     data_list = fetch_multiple_cryptos(cryptos)
     
     if data_list:
